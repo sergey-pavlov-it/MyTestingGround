@@ -361,3 +361,32 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Ignore everything by default
+*
+
+# Keep Git files
+!.gitignore
+!.gitattributes
+
+# Keep README if you want portfolio description
+!README.md
+
+# Allow Assets folder
+!Assets/
+
+# Allow only Scripts folder
+!Assets/Scripts/
+!Assets/Scripts/**/
+
+# Allow C# scripts
+!Assets/Scripts/**/*.cs
+
+# Allow Unity meta files for scripts
+!Assets/Scripts/**/*.cs.meta
+
+# Allow assembly definition files if you use them
+!Assets/Scripts/**/*.asmdef
+!Assets/Scripts/**/*.asmdef.meta
+!Assets/Scripts/**/*.asmref
+!Assets/Scripts/**/*.asmref.meta
