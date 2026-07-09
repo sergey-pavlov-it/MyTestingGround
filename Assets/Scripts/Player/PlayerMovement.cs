@@ -4,19 +4,24 @@ public class PlayerMovement : MonoBehaviour
 {
     private CharacterController characterController;
     private PlayerControls playerControls;
-    
+   
     // Движение (WASD)
     private Vector2 moveInput;
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float sprintSpeed = 8f;
 
     // Прыжок
-    [SerializeField] private float jumpHeight = 1.5f;
+    [SerializeField] private float jumpHeight = 1.0f;
 
     // Гравитация
     [SerializeField] private float gravity = -9.81f;
     [SerializeField] private float groundedGravity = -2f; // небольшое притяжение к земле
     private float verticalVelocity;
+
+    // Поворот
+    [SerializeField] private Transform rotationRoot; // для реализации поворота персонажа за камерой (при движении)
+    [SerializeField] private Transform cameraRoot;
+    [SerializeField] private float rotationSpeed = 10f;
 
     private void Awake()
     {
@@ -27,11 +32,6 @@ public class PlayerMovement : MonoBehaviour
     private void OnEnable()
     {
         playerControls.Player.Enable();
-    }
-
-    void Start()
-    {
-        
     }
 
     void Update()
@@ -46,7 +46,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void ApplyGravity() // Гравитация
     {
-        if (characterController.isGrounded)
+        if (characterController.isGrounded && verticalVelocity < 0)
         {
             verticalVelocity = groundedGravity;
         }
@@ -58,7 +58,7 @@ public class PlayerMovement : MonoBehaviour
 
     private void Jump()
     {
-        if (characterController.isGrounded && playerControls.Player.Jump.WasPerformedThisFrame())
+        if (characterController.isGrounded && playerControls.Player.Jump.WasPressedThisFrame())
         {
             verticalVelocity = Mathf.Sqrt(jumpHeight * -2 * gravity);
         }
@@ -79,11 +79,27 @@ public class PlayerMovement : MonoBehaviour
         }
 
         // Движение по горизонтали
-        Vector3 moveDirection = new Vector3(moveInput.x, 0f, moveInput.y);
+        Vector3 cameraForward = cameraRoot.forward;
+        Vector3 cameraRight = cameraRoot.right;
+
+        cameraForward.y = 0f;
+        cameraRight.y = 0f;
+
+        Vector3 moveDirection = cameraForward.normalized * moveInput.y + cameraRight.normalized * moveInput.x;
         moveDirection = Vector3.ClampMagnitude(moveDirection, 1f); // ограничиваем диагональное движение, чтобы оно не было быстрее прямого
+        
+        if (moveDirection.sqrMagnitude > 0.01f)
+        {
+            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
+
+            rotationRoot.rotation = Quaternion.Slerp(rotationRoot.rotation, targetRotation, rotationSpeed * Time.deltaTime);
+        }
+
         Vector3 horizontalMovement = moveDirection * currentSpeed;
 
         ApplyGravity();
+
+        Jump();
 
         // Движение по вертикали
         Vector3 verticalMovement = new Vector3(0f, verticalVelocity, 0f);
