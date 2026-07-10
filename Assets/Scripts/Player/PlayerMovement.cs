@@ -126,6 +126,6 @@ public class PlayerMovement : MonoBehaviour
     {
         AnimatorStateInfo stateInfo = playerAnimator.GetCurrentAnimatorStateInfo(0);
 
-        return stateInfo.IsName("Base Layer.Jump_Land:"); // возвращает True - Animator сейчас проигрывает Jump_Land
+        return stateInfo.IsName("Base Layer.Jump_Land"); // возвращает True - Animator сейчас проигрывает Jump_Land
     }
 }
