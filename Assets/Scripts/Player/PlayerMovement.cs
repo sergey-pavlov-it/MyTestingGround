@@ -4,11 +4,12 @@ public class PlayerMovement : MonoBehaviour
 {
     private CharacterController characterController;
     private PlayerControls playerControls;
+    private Animator playerAnimator;
    
     // Движение (WASD)
     private Vector2 moveInput;
-    [SerializeField] private float moveSpeed = 5f;
-    [SerializeField] private float sprintSpeed = 8f;
+    [SerializeField] private float moveSpeed = 2f;
+    [SerializeField] private float sprintSpeed = 5f;
 
     // Прыжок
     [SerializeField] private float jumpHeight = 1.0f;
@@ -27,6 +28,7 @@ public class PlayerMovement : MonoBehaviour
     {
         characterController = GetComponent<CharacterController>();
         playerControls = new PlayerControls();
+        playerAnimator = GetComponent<Animator>();
     }
 
     private void OnEnable()
@@ -68,6 +70,13 @@ public class PlayerMovement : MonoBehaviour
     {
         moveInput = playerControls.Player.Move.ReadValue<Vector2>();
 
+        bool isLanding = IsLanding(); // если Animator сейчас проигрывает Jump_Land блокируем перемещение и повторный прыжок
+        if (isLanding)
+        {
+            moveInput = Vector2.zero;
+        }
+
+
         float currentSpeed;
         if (playerControls.Player.Sprint.IsPressed())
         {
@@ -99,7 +108,10 @@ public class PlayerMovement : MonoBehaviour
 
         ApplyGravity();
 
-        Jump();
+        if (!isLanding)
+        {
+            Jump();
+        }
 
         // Движение по вертикали
         Vector3 verticalMovement = new Vector3(0f, verticalVelocity, 0f);
@@ -108,5 +120,12 @@ public class PlayerMovement : MonoBehaviour
         Vector3 finalMovement = horizontalMovement + verticalMovement;
 
         characterController.Move(finalMovement * Time.deltaTime);
+    }
+
+    private bool IsLanding() 
+    {
+        AnimatorStateInfo stateInfo = playerAnimator.GetCurrentAnimatorStateInfo(0);
+
+        return stateInfo.IsName("Base Layer.Jump_Land:"); // возвращает True - Animator сейчас проигрывает Jump_Land
     }
 }
