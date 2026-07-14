@@ -4,14 +4,23 @@ public class PlayerCamera : MonoBehaviour
 {
     private PlayerControls playerControls;
 
-    private float yaw;
+    private float cameraHorizontalAngle;
+    private float cameraVerticalAngle;
 
+    [SerializeField] private GameObject cameraTarget;
     [SerializeField] private float mouseSensitivity = 0.5f;
+
+    [SerializeField] private float minVerticalAngle = -30f;
+    [SerializeField] private float maxVerticalAngle = 30f;
 
     private void Awake()
     {
         playerControls = new PlayerControls();
 
+        transform.localRotation = Quaternion.Euler(0f, cameraHorizontalAngle, 0f);
+        cameraTarget.transform.localRotation = Quaternion.Euler(cameraVerticalAngle, 0f, 0f);
+
+        // Блокируем курсор по центру и скрываем
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
     }
@@ -24,9 +33,16 @@ public class PlayerCamera : MonoBehaviour
     private void Update()
     {
         Vector2 lookInput = playerControls.Player.Look.ReadValue<Vector2>();
-        yaw += lookInput.x * mouseSensitivity;
 
-        transform.localRotation = Quaternion.Euler(0f, yaw, 0f);
+        // Горизонтальный осмотр
+        cameraHorizontalAngle += lookInput.x * mouseSensitivity;
+
+        // Вертикальный осмотр
+        cameraVerticalAngle -= lookInput.y * mouseSensitivity;
+        cameraVerticalAngle = Mathf.Clamp(cameraVerticalAngle, minVerticalAngle, maxVerticalAngle);
+
+        transform.localRotation = Quaternion.Euler(0f, cameraHorizontalAngle, 0f);
+        cameraTarget.transform.localRotation = Quaternion.Euler(cameraVerticalAngle, 0f, 0f);
     }
 
     private void OnDisable()
