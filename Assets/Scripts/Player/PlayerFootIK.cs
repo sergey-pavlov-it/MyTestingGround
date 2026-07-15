@@ -48,38 +48,52 @@ public class PlayerFootIK : MonoBehaviour
 
     private void Update()
     {
+        UpdateIKWeights();
+
+        leftKneeHint.position = CalculateKneeHintPosition(leftKneeBone);
+        rightKneeHint.position = CalculateKneeHintPosition(rightKneeBone);
+
+        bool leftGroundFound = TryPlaceFootOnGround(leftFootBone, leftFootTarget, out RaycastHit leftHit);
+        bool rightGroundFound = TryPlaceFootOnGround(rightFootBone, rightFootTarget, out RaycastHit rightHit);
+
+        UpdatePelvisPosition(leftGroundFound, leftHit, rightGroundFound, rightHit);
+    }
+
+    private void UpdateIKWeights()
+    {
         leftLegIK.weight = animator.GetFloat("LeftFootIK");
         rightLegIK.weight = animator.GetFloat("RightFootIK");
+    }
 
-        leftFootTarget.SetPositionAndRotation(leftFootBone.position, leftFootBone.rotation);
-        rightFootTarget.SetPositionAndRotation(rightFootBone.position, rightFootBone.rotation);
+    private Vector3 CalculateKneeHintPosition(Transform kneeBone)
+    {
+        return kneeBone.position + forwardReference.forward * kneeHintDistance;
+    }
 
-        leftKneeHint.position = leftKneeBone.position + forwardReference.forward * kneeHintDistance;
-        rightKneeHint.position = rightKneeBone.position + forwardReference.forward * kneeHintDistance;
-
-        // Показывает луч (для визуала)
-        Vector3 leftRayOrigin = leftFootBone.position + Vector3.up * rayStartHeight;
-        Vector3 rightRayOrigin = rightFootBone.position + Vector3.up * rayStartHeight;
-        Debug.DrawRay(leftRayOrigin, Vector3.down * rayLength, Color.red);
-        Debug.DrawRay( rightRayOrigin, Vector3.down * rayLength, Color.red);
-
-        bool leftGroundFound = Physics.Raycast(leftRayOrigin, Vector3.down, out RaycastHit leftHit, rayLength, groundLayer, QueryTriggerInteraction.Ignore);
-        bool rightGroundFound = Physics.Raycast(rightRayOrigin, Vector3.down, out RaycastHit rightHit, rayLength, groundLayer, QueryTriggerInteraction.Ignore);
-
-        if (leftGroundFound)
+    private bool TryPlaceFootOnGround(Transform footBone, Transform footTarget, out RaycastHit hit)
+    {
+        footTarget.SetPositionAndRotation(footBone.position, footBone.rotation);
+        
+        Vector3 rayOrigin = footBone.position + Vector3.up * rayStartHeight;
+        
+        Debug.DrawRay(rayOrigin, Vector3.down * rayLength, Color.red);
+        
+        bool groundFound = Physics.Raycast(rayOrigin, Vector3.down, out hit, rayLength, groundLayer, QueryTriggerInteraction.Ignore);
+        
+        if (groundFound)
         {
-            Vector3 leftTargetPosition = leftFootBone.position;
-            leftTargetPosition.y = leftHit.point.y + footHeightOffset;
-            leftFootTarget.position = leftTargetPosition;
+            Vector3 targetPosition = footBone.position;
+
+            targetPosition.y = hit.point.y + footHeightOffset;
+
+            footTarget.position = targetPosition;
         }
 
-        if (rightGroundFound)
-        {
-            Vector3 rightTargetPosition = rightFootBone.position;
-            rightTargetPosition.y = rightHit.point.y + footHeightOffset;
-            rightFootTarget.position = rightTargetPosition;
-        }
+        return groundFound;
+    }
 
+    private void UpdatePelvisPosition(bool leftGroundFound, RaycastHit leftHit, bool rightGroundFound, RaycastHit rightHit)
+    {
         float desiredPelvisOffset = 0f;
 
         if (leftGroundFound)
@@ -96,24 +110,10 @@ public class PlayerFootIK : MonoBehaviour
             desiredPelvisOffset = Mathf.Min(desiredPelvisOffset, rightGroundDifference);
         }
 
-        desiredPelvisOffset = Mathf.Clamp(
-            desiredPelvisOffset,
-            -maxPelvisDrop,
-            0f
-        );
+        desiredPelvisOffset = Mathf.Clamp(desiredPelvisOffset, -maxPelvisDrop, 0f);
 
-        currentPelvisOffset = Mathf.MoveTowards(
-            currentPelvisOffset,
-            desiredPelvisOffset,
-            pelvisMoveSpeed * Time.deltaTime
-        );
+        currentPelvisOffset = Mathf.MoveTowards(currentPelvisOffset, desiredPelvisOffset, pelvisMoveSpeed * Time.deltaTime);
 
-        pelvisTarget.localPosition =
-            pelvisStartLocalPosition + Vector3.up * currentPelvisOffset;
-    }
-
-    private void LateUpdate()
-    {
-
+        pelvisTarget.localPosition = pelvisStartLocalPosition + Vector3.up * currentPelvisOffset;
     }
 }
